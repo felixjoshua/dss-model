@@ -45,13 +45,35 @@ def run_models_for_product(pid, df_all, verbose=True):
     feat_full = fe.get_feature_columns("full")
 
     for horizon in config.HORIZONS:
-        # ===== ARIMA (univariat, baseline statistik) =====
+                # ===== ARIMAX (dengan variabel eksogen) =====
+        EXOG = [
+            "is_weekend",
+            "is_holiday",
+            "hw_hm1",
+            "hw_h0",
+            "hw_hp1",
+            "hw_hp2",
+            "rainfall_mm"
+        ]
+
         if verbose:
-            print(f"  [{pid}] ARIMA  H+{horizon} ...", flush=True)
+            print(f"  [{pid}] ARIMAX H+{horizon} ...", flush=True)
+
         y_true, y_pred, order = m_arima.fit_predict_arima(
-            trainval["qty_sold"], test["qty_sold"], horizon=horizon)
-        results.append({"product": pid, "model": "ARIMA", "horizon": f"H+{horizon}",
-                        **ev.all_metrics(y_true, y_pred)})
+            trainval["qty_sold"],
+            test["qty_sold"],
+            exog_train=trainval[EXOG],
+            exog_test=test[EXOG],
+            horizon=horizon
+        )
+
+        results.append({
+            "product": pid,
+            "model": "ARIMAX",
+            "horizon": f"H+{horizon}",
+            **ev.all_metrics(y_true, y_pred)
+        })
+
 
     # ===== Prophet (multi-horizon via prediksi penuh test) =====
     if verbose:
